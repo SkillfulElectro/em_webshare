@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EM WebShare</title>
+    <link rel="stylesheet" type="text/css" href="styles.css">
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>EM WebShare</h1>
+      <h5 style="font-family: 'Arial', sans-serif; font-size: 1.2rem; text-align: center; margin: 10px 0;">
+        <a href="https://github.com/SkillfulElectro/em_webshare.git" class="button-link">
+          Contribute to code
+        </a>
+      </h5>
+      
+      
+
+      <div class="radio-group">
+        <label>
+          <input type="radio" name="selectionType" value="file" checked />
+          File
+        </label>
+        <label>
+          <input type="radio" name="selectionType" value="folder" />
+          Folder
+        </label>
+      </div>
+
+      <div class="file-input-container">
+        <input type="file" id="fileInputFile" style="display: none" />
+        <input
+          type="file"
+          id="fileInputFolder"
+          webkitdirectory
+          multiple
+          style="display: none"
+        />
+        <button id="chooseBtn">Send File/Folder</button>
+      </div>
+
+      <button id="downloadBtn">Download File</button>
+
+      <div class="progress-container" id="progressContainer">
+        <div class="progress-bar">
+          <div class="progress-bar-inner" id="progressBarInner"></div>
+        </div>
+        <div id="progressText" class="progress-text">0%</div>
+      </div>
+    </div>
+
+    <script src="scripts.js"></script>
+  </body>
+</html>
