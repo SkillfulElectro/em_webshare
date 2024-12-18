@@ -244,6 +244,7 @@ func uploadFileHandler(w http.ResponseWriter, r *http.Request) {
 	file, fileHeader, err := r.FormFile("file")
 	if err != nil {
 		http.Error(w, "Unable to retrieve file: "+err.Error(), http.StatusBadRequest)
+		fmt.Println("Unable to retrieve file: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
@@ -251,7 +252,14 @@ func uploadFileHandler(w http.ResponseWriter, r *http.Request) {
 	originalFileName := fileHeader.Filename
 	relativePath := r.FormValue("relativePath")
 
-	filePath := filepath.Join(uploadDir, relativePath)
+	var filePath string
+	if len(relativePath) == 0 {
+		filePath = filepath.Join(uploadDir, originalFileName)
+	} else {
+		filePath = filepath.Join(uploadDir, relativePath)
+	}
+
+	// fmt.Println(filePath)
 
 	dir := filepath.Dir(filePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -262,6 +270,7 @@ func uploadFileHandler(w http.ResponseWriter, r *http.Request) {
 	dst, err := os.Create(filePath)
 	if err != nil {
 		http.Error(w, "Unable to create file on server: "+err.Error(), http.StatusInternalServerError)
+		fmt.Println("Unable to create file on server: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer dst.Close()
@@ -269,6 +278,7 @@ func uploadFileHandler(w http.ResponseWriter, r *http.Request) {
 	_, err = io.Copy(dst, file)
 	if err != nil {
 		http.Error(w, "Error saving file: "+err.Error(), http.StatusInternalServerError)
+		fmt.Println("Error saving file: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
