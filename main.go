@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -223,7 +222,7 @@ func serveFile(w http.ResponseWriter, filePath string) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		http.Error(w, "Error opening file", http.StatusInternalServerError)
-		log.Printf("Error opening file %s: %v\n", filePath, err)
+		fmt.Printf("Error opening file %s: %v\n", filePath, err)
 		return
 	}
 	defer file.Close()
@@ -232,7 +231,7 @@ func serveFile(w http.ResponseWriter, filePath string) {
 	w.Header().Set("Content-Type", "application/octet-stream")
 
 	if _, err := io.Copy(w, file); err != nil {
-		log.Printf("Error sending file %s: %v\n", filePath, err)
+		fmt.Printf("Error sending file %s: %v\n", filePath, err)
 	}
 }
 
@@ -245,7 +244,7 @@ func streamAsTar(w http.ResponseWriter, dirPath string) {
 
 	err := filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			log.Printf("Error walking path %s: %v\n", path, err)
+			fmt.Printf("Error walking path %s: %v\n", path, err)
 			return err
 		}
 
@@ -275,7 +274,7 @@ func streamAsTar(w http.ResponseWriter, dirPath string) {
 		return nil
 	})
 	if err != nil {
-		log.Printf("Error streaming directory %s: %v\n", dirPath, err)
+		fmt.Printf("Error streaming directory %s: %v\n", dirPath, err)
 	}
 }
 
