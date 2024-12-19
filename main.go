@@ -1,10 +1,12 @@
 package main
 
 import (
+	"archive/tar"
 	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -194,39 +196,98 @@ func downloadFileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	mu.Lock()
-	defer mu.Unlock()
-
 	if len(downloadQueue) == 0 {
+		mu.Unlock()
 		http.Error(w, "No file available for download", http.StatusNotFound)
 		return
 	}
 
-	filePath := downloadQueue[0]
+	dirPath := downloadQueue[0]
+	downloadQueue = downloadQueue[1:]
+	mu.Unlock()
 
-	_, err := os.Stat(filePath)
-	if os.IsNotExist(err) {
-		http.Error(w, "File does not exist", http.StatusNotFound)
+	info, err := os.Stat(dirPath)
+	if err != nil {
+		http.Error(w, "File or directory does not exist", http.StatusNotFound)
 		return
 	}
 
+	if info.IsDir() {
+		streamAsTar(w, dirPath)
+	} else {
+		serveFile(w, dirPath)
+	}
+}
+
+func serveFile(w http.ResponseWriter, filePath string) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		http.Error(w, "Error opening file", http.StatusInternalServerError)
+		log.Printf("Error opening file %s: %v\n", filePath, err)
 		return
 	}
 	defer file.Close()
 
-	fileName := filepath.Base(filePath)
-	w.Header().Set("Content-Disposition", "attachment; filename="+fileName)
+	w.Header().Set("Content-Disposition", "attachment; filename="+filepath.Base(filePath))
 	w.Header().Set("Content-Type", "application/octet-stream")
 
-	_, err = io.Copy(w, file)
-	if err != nil {
-		http.Error(w, "Error sending file", http.StatusInternalServerError)
-		return
+	if _, err := io.Copy(w, file); err != nil {
+		log.Printf("Error sending file %s: %v\n", filePath, err)
 	}
+}
 
-	downloadQueue = downloadQueue[1:]
+func streamAsTar(w http.ResponseWriter, dirPath string) {
+	w.Header().Set("Content-Disposition", "attachment; filename="+filepath.Base(dirPath)+".tar")
+	w.Header().Set("Content-Type", "application/x-tar")
+
+	tarWriter := tar.NewWriter(w)
+	defer tarWriter.Close()
+
+	err := filepath.Walk(dirPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			log.Printf("Error walking path %s: %v\n", path, err)
+			return err
+		}
+
+		if path == dirPath {
+			return nil
+		}
+
+		relPath, err := filepath.Rel(dirPath, path)
+		if err != nil {
+			return err
+		}
+
+		header, err := tar.FileInfoHeader(info, path)
+		if err != nil {
+			return err
+		}
+		header.Name = relPath
+
+		if err := tarWriter.WriteHeader(header); err != nil {
+			return err
+		}
+
+		if !info.IsDir() {
+			return writeFileToTar(tarWriter, path)
+		}
+
+		return nil
+	})
+	if err != nil {
+		log.Printf("Error streaming directory %s: %v\n", dirPath, err)
+	}
+}
+
+func writeFileToTar(tarWriter *tar.Writer, filePath string) error {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = io.Copy(tarWriter, file)
+	return err
 }
 
 func uploadFileHandler(w http.ResponseWriter, r *http.Request) {
@@ -244,7 +305,7 @@ func uploadFileHandler(w http.ResponseWriter, r *http.Request) {
 	file, fileHeader, err := r.FormFile("file")
 	if err != nil {
 		http.Error(w, "Unable to retrieve file: "+err.Error(), http.StatusBadRequest)
-		// fmt.Println("Unable to retrieve file: "+err.Error(), http.StatusBadRequest)
+		fmt.Println("Unable to retrieve file: "+err.Error(), http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
@@ -270,7 +331,7 @@ func uploadFileHandler(w http.ResponseWriter, r *http.Request) {
 	dst, err := os.Create(filePath)
 	if err != nil {
 		http.Error(w, "Unable to create file on server: "+err.Error(), http.StatusInternalServerError)
-		// fmt.Println("Unable to create file on server: "+err.Error(), http.StatusInternalServerError)
+		fmt.Println("Unable to create file on server: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer dst.Close()
@@ -278,7 +339,7 @@ func uploadFileHandler(w http.ResponseWriter, r *http.Request) {
 	_, err = io.Copy(dst, file)
 	if err != nil {
 		http.Error(w, "Error saving file: "+err.Error(), http.StatusInternalServerError)
-		// fmt.Println("Error saving file: "+err.Error(), http.StatusInternalServerError)
+		fmt.Println("Error saving file: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -299,45 +360,6 @@ func startServer(port int) {
 	fmt.Printf("EM WebShare is ready on port %d\n", port)
 	if err := http.ListenAndServe(address, nil); err != nil {
 		fmt.Println("Error starting server:", err)
-	}
-}
-
-func processFileOrDir(filePath string) {
-
-	if _, err := os.Stat(filePath); err != nil {
-		fmt.Printf("File %s not found.\n", filePath)
-		return
-	}
-
-	info, err := os.Stat(filePath)
-	if err != nil {
-		fmt.Printf("Error accessing %s: %v\n", filePath, err)
-		return
-	}
-
-	if info.IsDir() {
-
-		err := filepath.Walk(filePath, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				fmt.Printf("Error walking the path %s: %v\n", path, err)
-				return nil
-			}
-
-			if !info.IsDir() {
-				mu.Lock()
-				downloadQueue = append(downloadQueue, path)
-				mu.Unlock()
-			}
-			return nil
-		})
-		if err != nil {
-			fmt.Printf("Error processing directory %s: %v\n", filePath, err)
-		}
-	} else {
-
-		mu.Lock()
-		downloadQueue = append(downloadQueue, filePath)
-		mu.Unlock()
 	}
 }
 
@@ -382,7 +404,14 @@ func handleCLICommands() {
 
 			filePath := strings.Join(parts[1:], " ")
 
-			processFileOrDir(filePath)
+			if _, err := os.Stat(filePath); err != nil {
+				fmt.Printf("File %s not found.\n", filePath)
+				return
+			}
+
+			mu.Lock()
+			downloadQueue = append(downloadQueue, filePath)
+			mu.Unlock()
 
 			fmt.Printf("File %s added to download queue.\n", filePath)
 
