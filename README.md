@@ -19,6 +19,6 @@ you can upload multiple files and directories , they will be awaited till user c
 - client user : open your browser on http://ipv4:port of the server user , for sending choose folder or file and select press send button , for downloading what client uploaded just press download button , if server user uploads a directory applications which works like IDM cannot download the file use browsers its own Downloader
 
 
-**in server side check if OS firewall is not blocking the app**
+**⚠️in server side check if OS firewall is not blocking the app⚠️**
 
 Demo UI : https://skillfulelectro.github.io/em_webshare/
