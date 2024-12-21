@@ -3,6 +3,6 @@
 - just start the application from cli and open the browser on the other device using your ipv4 and port which app provides
 
 ## Goal
-- install App on one device , use on all the devices
+- install an App on one device , use on all of the devices
 
 Demo UI : https://skillfulelectro.github.io/em_webshare/
