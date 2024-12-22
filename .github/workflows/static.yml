@@ -32,7 +32,7 @@ jobs:
       - name: Clean up directory (Windows)
         if: runner.os == 'Windows'
         run: |
-          Get-ChildItem -Path . -Exclude 'em_webshare', '.' -Recurse | Remove-Item -Recurse -Force
+          Get-ChildItem -Path . -Exclude 'em_webshare.exe', '.' -Recurse | Remove-Item -Recurse -Force
 
       - name: Clean up directory (Linux/macOS)
         if: runner.os != 'Windows'
