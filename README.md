@@ -20,5 +20,3 @@ you can upload multiple files and directories , they will be awaited till user c
 
 
 **⚠️in server side check if OS firewall is not blocking the app⚠️**
-
-Demo UI : https://skillfulelectro.github.io/em_webshare/
