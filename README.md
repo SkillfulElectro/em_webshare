@@ -15,6 +15,10 @@ now you can use
 ```sh
 upload /path/to/your/file/or/dir
 ```
+or
+```sh
+up_dir path/to/dir/which/you/want/to/save/shared/files/from/client/user
+```
 you can upload multiple files and directories , they will be awaited till user click download button , First Added First Downloaded
 - client user : open your browser on http://ipv4:port of the server user , for sending choose folder or file and select press send button , for downloading what client uploaded just press download button , if server user uploads a directory applications which works like IDM cannot download the file use browsers its own Downloader
 
