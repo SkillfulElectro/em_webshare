@@ -24,3 +24,5 @@ you can upload multiple files and directories , they will be awaited till user c
 
 
 **⚠️in server side check if OS firewall is not blocking the app⚠️**
+
+**new version for each platform is builded automatically and is downloadable from artifacts**
