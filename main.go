@@ -13,10 +13,17 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	_ "embed"
 )
 
 const uploadDir = "./uploads"
-const staticDir = "./statics"
+
+//go:embed statics/index.html
+var index_html string
+//go:embed statics/scripts.js
+var scripts_js string
+//go:embed statics/styles.css
+var styles_css string
 
 var downloadQueue []string
 
@@ -48,8 +55,23 @@ func findAvailablePort() int {
 }
 
 func serveStaticFiles() {
-	fs := http.FileServer(http.Dir(staticDir))
-	http.Handle("/", fs)
+	// Serve the HTML content at "/"
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprint(w, index_html)
+	})
+
+	// Serve the CSS content at "/styles.css"
+	http.HandleFunc("/styles.css", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/css")
+		fmt.Fprint(w, styles_css)
+	})
+
+	// Serve the JS content at "/scripts.js"
+	http.HandleFunc("/scripts.js", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/javascript")
+		fmt.Fprint(w, scripts_js)
+	})
 }
 
 // will be used in future updates
