@@ -17,6 +17,7 @@ import (
 )
 
 var uploadDir string
+var uploadDir_tex sync.Mutex
 
 //go:embed statics/index.html
 var index_html string
@@ -31,6 +32,9 @@ var mu sync.Mutex
 
 
 func init() {
+  uploadDir_tex.Lock()
+  defer uploadDir_tex.Unlock()
+
   execPath, err := os.Executable()
   if err != nil {
     fmt.Println("Error getting executable path:", err)
@@ -220,6 +224,9 @@ func checkFileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func downloadFileHandler(w http.ResponseWriter, r *http.Request) {
+  uploadDir_tex.Lock()
+  defer uploadDir_tex.Unlock()
+
   if r.Method != http.MethodGet {
     http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
     return
@@ -395,7 +402,7 @@ func startServer(port int) {
 
 func handleCLICommands() {
   for {
-    fmt.Println("Enter command (e.g., 'upload /file/path' , 'upload /dir/path'): (If dir , press download multiple times in web side)")
+    fmt.Println("Enter command (e.g., 'upload /file/path' , 'upload /dir/path' , 'up_dir /path/to/new/dir/for/saving/web/side/uploads'): ")
 
     scanner := bufio.NewScanner(os.Stdin)
     scanner.Scan()
@@ -426,6 +433,18 @@ func handleCLICommands() {
     }
 
     switch parts[0] {
+    case "up_dir":
+      if len(parts) < 2 {
+        fmt.Println("Please provide the path to directory for saving client uploads !")
+        continue
+      }
+
+      fmt.Println("Waiting to prev processes finish !")
+      uploadDir_tex.Lock()
+      uploadDir = parts[1]
+      uploadDir_tex.Unlock()
+      fmt.Println("Changed Upload directory")
+
     case "upload":
       if len(parts) < 2 {
         fmt.Println("Please provide the file path to upload.")
