@@ -89,6 +89,9 @@ func serveStaticFiles() {
 
 // will be used in future updates
 func uploadChunkHandler(w http.ResponseWriter, r *http.Request) {
+  uploadDir_tex.Lock()
+  defer uploadDir_tex.Unlock()
+
   if r.Method != http.MethodPost {
     http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
     return
@@ -224,9 +227,6 @@ func checkFileHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func downloadFileHandler(w http.ResponseWriter, r *http.Request) {
-  uploadDir_tex.Lock()
-  defer uploadDir_tex.Unlock()
-
   if r.Method != http.MethodGet {
     http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
     return
@@ -328,6 +328,9 @@ func writeFileToTar(tarWriter *tar.Writer, filePath string) error {
 }
 
 func uploadFileHandler(w http.ResponseWriter, r *http.Request) {
+  uploadDir_tex.Lock()
+  defer uploadDir_tex.Unlock()
+
   if r.Method != http.MethodPost {
     http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
     return
