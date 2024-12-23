@@ -446,7 +446,7 @@ func handleCLICommands() {
 
 			fmt.Println("Changing the Upload dir ... (it might take while)")
 			uploadDir_tex.Lock()
-			uploadDir = parts[1]
+			uploadDir = strings.Join(parts[1:], " ")
 			uploadDir_tex.Unlock()
 			fmt.Println("Changed Upload directory")
 
