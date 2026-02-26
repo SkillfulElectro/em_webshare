@@ -1,0 +1,59 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build-desktop:
+    name: Build Desktop - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Build application
+        run: go build -v -o em_webshare${{ runner.os == 'Windows' && '.exe' || '' }} .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: em_webshare-${{ matrix.os }}
+          path: em_webshare${{ runner.os == 'Windows' && '.exe' || '' }}
+
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Build Android APK
+        uses: fyne-io/fyne-action@v1
+        with:
+          os: android
+          appID: com.electrotech.em_webshare
+          sourceDir: mobile
+          icon: core/icon.png
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: em_webshare-android
+          path: mobile/*.apk
