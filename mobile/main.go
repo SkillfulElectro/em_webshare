@@ -76,7 +76,7 @@ func main() {
 	}
 
 	commandEntry := widget.NewEntry()
-	commandEntry.SetPlaceHolder("Enter command (e.g. upload /sdcard/...)")
+	commandEntry.SetPlaceHolder("Enter command (e.g. upload filename, ls, cd, pwd)")
 	commandEntry.OnSubmitted = func(s string) {
 		if s != "" {
 			fmt.Fprintf(writer, "> %s\n", s)

@@ -10,12 +10,25 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
 )
 
 var UploadDir string
+var workingDir string
+
+func getDownloadDir() string {
+	if runtime.GOOS == "android" {
+		return "/sdcard/Download"
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(home, "Downloads")
+}
 var UploadDir_tex sync.Mutex
 
 //go:embed statics/index.html
@@ -35,19 +48,29 @@ func Init(baseDir string) {
 	UploadDir_tex.Lock()
 	defer UploadDir_tex.Unlock()
 
-	if baseDir == "" {
-		execPath, err := os.Executable()
-		if err != nil {
-			fmt.Println("Error getting executable path:", err)
-			return
+	dlDir := getDownloadDir()
+	if dlDir != "" {
+		UploadDir = filepath.Join(dlDir, "em_webshare")
+	} else {
+		if baseDir == "" {
+			execPath, err := os.Executable()
+			if err != nil {
+				fmt.Println("Error getting executable path:", err)
+				return
+			}
+			baseDir = filepath.Dir(execPath)
 		}
-		baseDir = filepath.Dir(execPath)
+		UploadDir = filepath.Join(baseDir, "uploads")
 	}
-
-	UploadDir = filepath.Join(baseDir, "uploads")
 
 	if err := os.MkdirAll(UploadDir, os.ModePerm); err != nil {
 		fmt.Println("Error creating upload directory:", err)
+	}
+
+	if runtime.GOOS == "android" {
+		workingDir = "/sdcard/Download"
+	} else {
+		workingDir, _ = os.Getwd()
 	}
 }
 
@@ -437,17 +460,62 @@ func HandleCommand(command string, out io.Writer) bool {
 	}
 
 	switch parts[0] {
+	case "pwd":
+		fmt.Fprintln(out, workingDir)
+
+	case "cd":
+		if len(parts) < 2 {
+			fmt.Fprintln(out, "Please provide a path.")
+			return true
+		}
+		newDir := strings.Join(parts[1:], " ")
+		if !filepath.IsAbs(newDir) {
+			newDir = filepath.Join(workingDir, newDir)
+		}
+		if info, err := os.Stat(newDir); err == nil && info.IsDir() {
+			workingDir = newDir
+			fmt.Fprintf(out, "Changed directory to %s\n", workingDir)
+		} else {
+			fmt.Fprintf(out, "Directory %s not found.\n", newDir)
+		}
+
+	case "ls":
+		dir := workingDir
+		if len(parts) > 1 {
+			dir = strings.Join(parts[1:], " ")
+			if !filepath.IsAbs(dir) {
+				dir = filepath.Join(workingDir, dir)
+			}
+		}
+		files, err := os.ReadDir(dir)
+		if err != nil {
+			fmt.Fprintf(out, "Error reading directory: %v\n", err)
+			return true
+		}
+		for _, f := range files {
+			suffix := ""
+			if f.IsDir() {
+				suffix = "/"
+			}
+			fmt.Fprintf(out, "%s%s\n", f.Name(), suffix)
+		}
+
 	case "up_dir":
 		if len(parts) < 2 {
 			fmt.Fprintln(out, "Please provide the path to directory for saving client uploads after up_dir command !")
 			return true
 		}
 
+		path := strings.Join(parts[1:], " ")
+		if !filepath.IsAbs(path) {
+			path = filepath.Join(workingDir, path)
+		}
+
 		fmt.Fprintln(out, "Changing the Upload dir ... (it might take while)")
 		UploadDir_tex.Lock()
-		UploadDir = strings.Join(parts[1:], " ")
+		UploadDir = path
 		UploadDir_tex.Unlock()
-		fmt.Fprintln(out, "Changed Upload directory")
+		fmt.Fprintf(out, "Changed Upload directory to %s\n", UploadDir)
 
 	case "upload":
 		if len(parts) < 2 {
@@ -456,6 +524,23 @@ func HandleCommand(command string, out io.Writer) bool {
 		}
 
 		filePath := strings.Join(parts[1:], " ")
+
+		if !filepath.IsAbs(filePath) {
+			// Try relative to workingDir
+			tempPath := filepath.Join(workingDir, filePath)
+			if _, err := os.Stat(tempPath); err == nil {
+				filePath = tempPath
+			} else {
+				// Try relative to Download folder if not already there
+				dlDir := getDownloadDir()
+				if dlDir != "" && workingDir != dlDir {
+					tempPath = filepath.Join(dlDir, filePath)
+					if _, err := os.Stat(tempPath); err == nil {
+						filePath = tempPath
+					}
+				}
+			}
+		}
 
 		if _, err := os.Stat(filePath); err != nil {
 			fmt.Fprintf(out, "File %s not found.\n", filePath)

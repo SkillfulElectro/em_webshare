@@ -10,7 +10,7 @@ import (
 func handleCLICommands() {
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
-		fmt.Println("Enter command ('upload /file/path' , 'upload /dir/path' , 'up_dir /path/to/new/dir/for/saving/web/side/uploads'): ")
+		fmt.Println("Enter command ('upload <path>', 'ls <path>', 'cd <path>', 'pwd', 'up_dir <path>', 'exit'): ")
 
 		if !scanner.Scan() {
 			break
