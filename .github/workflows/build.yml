@@ -46,19 +46,22 @@ jobs:
         with:
           go-version: '1.23'
 
+      - name: Install fyne-cross
+        run: go install github.com/fyne-io/fyne-cross@latest
+
       - name: Build Android APK
-        uses: lucor/fyne-action@v1
-        with:
-          os: android
-          appID: com.electrotech.em_webshare
-          sourceDir: mobile
-          icon: core/icon.png
+        run: |
+          $(go env GOPATH)/bin/fyne-cross android \
+            -app-id com.electrotech.em_webshare \
+            -icon core/icon.png \
+            -name em_webshare \
+            ./mobile
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: em_webshare-android
-          path: mobile/*.apk
+          path: fyne-cross/dist/android/*.apk
 
   release:
     name: Release
