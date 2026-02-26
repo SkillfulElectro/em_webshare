@@ -1,4 +1,6 @@
 # em_webshare
+[![Latest Release](https://img.shields.io/github/v/release/SkillfulElectro/em_webshare)](https://github.com/SkillfulElectro/em_webshare/releases)
+
 - Simple and easy to use web based sharing file app
 
 ## Goal
