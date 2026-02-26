@@ -4,25 +4,41 @@
 ## Goal
 - install an App on one device , share to all of the devices
 
+## Features
+- **Cross-platform**: Works on Windows, Linux, macOS, and Android.
+- **Web-based UI**: Easy for client users to upload and download files via browser.
+- **CLI Functionality on Android**: The Android app includes a console to run server commands.
+- **Automated Builds**: Binaries for all platforms are automatically built and released.
+
 ## How to use
-- before starting anything , both of the devices must be in same network
-- server user : just build em_webshare and start it using
+### Server Side
+#### Desktop (CLI)
+1. Download the `em_webshare` binary for your platform from the [latest release](https://github.com/SkillfulElectro/em_webshare/releases).
+2. Start it using:
 ```sh
 ./em_webshare
 ```
-it will host a web server on the first available port it finds , now check for your ipv4 in the preferred network in windows you can use ipconfig command .
-now you can use
-```sh
-upload /path/to/your/file/or/dir
-```
-or
-```sh
-up_dir path/to/dir/which/you/want/to/save/shared/files/from/client/user
-```
-you can upload multiple files and directories , they will be awaited till user click download button , First Added First Downloaded
-- client user : open your browser on http://ipv4:port of the server user , for sending choose folder or file and select press send button , for downloading what client uploaded just press download button , if server user uploads a directory applications which works like IDM cannot download the file use browsers its own Downloader
+It will host a web server on the first available port. Check your IPv4 address (e.g., using `ipconfig` on Windows or `ifconfig`/`ip addr` on Linux).
 
+#### Android
+1. Download and install the APK from the [latest release](https://github.com/SkillfulElectro/em_webshare/releases).
+2. Open the app. It will start the server and show you the local IP and port.
+3. Use the input field at the bottom to enter commands.
 
-**⚠️in server side check if OS firewall is not blocking the app⚠️**
+### Commands
+- `upload /path/to/your/file/or/dir`: Add a file or directory to the download queue for clients.
+- `up_dir /path/to/dir`: Set the directory where files uploaded by clients will be saved.
+- `exit`: Stop the server and exit.
 
-**new version for each platform is builded automatically and is downloadable from artifacts**
+You can upload multiple files and directories; they will be served in the order they were added (First Added, First Downloaded).
+
+### Client Side
+1. Open your browser and navigate to `http://<server-ip>:<port>`.
+2. To **send** files: Choose files or a folder and press the "Send" button.
+3. To **download** files: Press the "Download" button to get the next file/directory in the server's queue.
+   - *Note*: If the server shares a directory, it will be streamed as a `.tar` file.
+
+**⚠️ Warning: Ensure your OS firewall or Android permissions are not blocking the app. ⚠️**
+
+## Contribution
+Contribute at: https://github.com/SkillfulElectro/em_webshare.git

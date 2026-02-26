@@ -1,0 +1,83 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build-desktop:
+    name: Build Desktop - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Build application
+        run: go build -v -o em_webshare${{ runner.os == 'Windows' && '.exe' || '' }} .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: em_webshare-${{ matrix.os }}
+          path: em_webshare${{ runner.os == 'Windows' && '.exe' || '' }}
+
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Android APK
+        run: |
+          docker run --rm -v $(pwd):/app -w /app fyneio/fyne-cross android -app-id com.electrotech.em_webshare -icon core/icon.png ./mobile
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: em_webshare-android
+          path: fyne-cross/dist/android/*.apk
+
+  release:
+    name: Create Release
+    needs: [build-desktop, build-android]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare Release Files
+        run: |
+          mkdir release
+          cp artifacts/em_webshare-windows-latest/em_webshare.exe release/em_webshare-windows.exe
+          cp artifacts/em_webshare-ubuntu-latest/em_webshare release/em_webshare-linux
+          cp artifacts/em_webshare-macos-latest/em_webshare release/em_webshare-macos
+          cp artifacts/em_webshare-android/*.apk release/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v7.0.0
+          name: Version 7.0.0
+          files: release/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
